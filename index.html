@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tampinhas</title>
+  <script type="application/javascript">
+    const getPosition = line => line.split(' - ')[0].trim();
+    const getName = line => line.split(' - ')[1].trim();
+    const isNameEntryLine = line => line.indexOf(' - ') > 0;
+    const isNameNotEmpty = line => getName(line) !== '';
+    const isEntryLineAndUsed = line => isNameEntryLine(line) && isNameNotEmpty(line);
+    const isGoalKeepers = line => getPosition(line) === 'GK';
+    const isFieldPlayer = line => !isGoalKeepers(line);
+
+    /**
+     * Shuffles array in place. ES6 version
+     * From: https://stackoverflow.com/a/6274381
+     * @param {Array} a items An array containing the items.
+     */
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function parsePresenceList(presenceList) {
+      let presenceListEntries = presenceList.split('\n').filter(isEntryLineAndUsed);
+      let goalKeepers = presenceListEntries.filter(isGoalKeepers);
+      let fieldPlayers = presenceListEntries.filter(isFieldPlayer);
+      return {goalKeepers, fieldPlayers};
+    }
+
+    function shuffleTeams(fieldPlayers, goalKeepers, teamSize) {
+      let nrTeams = Math.ceil(fieldPlayers.length / teamSize);
+      let teams = [];
+      let shuffledPlayers = shuffle(fieldPlayers);
+      let shuffledGoalKeepers = shuffle(goalKeepers);
+      for (let i = 0; i < nrTeams; i++) {
+        const currentGoalKeeper = shuffledGoalKeepers[i];
+        const currentFieldPlayer = shuffledPlayers.slice(i * teamSize, (i + 1) * teamSize);
+        teams.push([currentGoalKeeper].concat(currentFieldPlayer));
+      }
+
+      return teams;
+    }
+
+    const getPresenceList = _ => document.getElementById('lista').value;
+    const setResult = result => document.getElementById('result').innerHTML = result;
+    const getTeamSize = _ => document.getElementById('teamSize').value;
+
+    function formatTeam(team, i) {
+      return '<div class="team">'
+        + `<h3> Time ${i+1} </h3>`
+        + `<div class="goalKeeper">${team[0] || 'Sem goleiro'}</div>`
+        + team.slice(1).map(player => `<div class="fieldPlayer">${player}</div>`).join('')
+        + '</div>';
+    }
+
+    function formatTeams(teams) {
+      return teams.map(formatTeam).join('<hr/>');
+    }
+
+    function sorteiaTimes() {
+      let {goalKeepers, fieldPlayers} = parsePresenceList(getPresenceList());
+      let teamSize = getTeamSize();
+      let teams = shuffleTeams(fieldPlayers, goalKeepers, teamSize);
+      setResult(formatTeams(teams));
+    }
+
+  </script>
+  <style>
+    textarea {
+      width: 300px;
+      height: 450px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tampinhas Automaticas</h1>
+  <div><label>Jogadores em campo: </label> <input type="number" id="teamSize" value="5"/></div>
+  <div><textarea id="lista">Copie e cole a lista do whatsapp aqui.</textarea></div>
+  <div><button onclick="sorteiaTimes()">Sorteie</button></div>
+  <h2>Times</h2>
+  <div id="result"></div>
+</body>
+</html>
